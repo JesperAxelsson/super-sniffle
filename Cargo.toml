@@ -1,0 +1,12 @@
+[package]
+name = "super_sniffle"
+version = "0.1.0"
+authors = ["Jesper Axelsson <jesperaxe@gmail.com>"]
+
+[dependencies]
+
+
+[[bin]]
+name = "main"
+path = "src/bin/main.rs"
+doc = false
