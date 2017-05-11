@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
+use std::collections::HashMap;
+
 use dom;
 
-struct Parser {
+pub struct Parser {
     pos: usize,
     input: String
 }
@@ -70,7 +72,68 @@ impl Parser {
 
         let children = self.parse_nodes();
 
-        https://limpet.net/mbrubeck/2014/08/11/toy-layout-engine-2.html
+        assert!(self.consume_char() == '<');
+        assert!(self.consume_char() == '/');
+        assert!(self.parse_tag_name() == tag_name);
+        assert!(self.consume_char() == '>');
+
+        return dom::elem(tag_name, attrs, children);
     }
 
+
+    fn parse_attr(&mut self) -> (String, String) {
+        let name = self.parse_tag_name();
+        assert!(self.consume_char() == '=');
+        let value = self.parse_attr_value();
+        return (name, value);
+    }
+
+
+    fn parse_attr_value(&mut self) -> String {
+        let open_quote = self.consume_char();
+        assert!(open_quote == '"' || open_quote == '\'');
+        let value = self.consume_while(|c| c != open_quote);
+        assert!(self.consume_char() == open_quote);
+        return value;
+    }
+
+
+    fn parse_attributes(&mut self) -> dom::AttrMap {
+        let mut attributes = HashMap::new();
+        loop {
+            self.consume_whitespace();
+            if self.next_char() == '>' {
+                break;
+            }
+
+            let (name, value) = self.parse_attr();
+            attributes.insert(name, value);
+        }
+        return attributes;
+    }
+
+
+    fn parse_nodes(&mut self) -> Vec<dom::Node> {
+        let mut nodes = Vec::new();
+        loop {
+            self.consume_whitespace();
+            if self.eof() || self.starts_with("</") {
+                break;
+            }
+            nodes.push(self.parse_node());
+        }
+
+        return nodes;
+    }
+
+
+    pub fn parse(source: String) -> dom::Node {
+        let mut nodes = Parser { pos: 0, input: source }.parse_nodes();
+
+        if nodes.len() == 1 {
+            nodes.swap_remove(0)
+        } else {
+            dom::elem("html".to_string(), HashMap::new(), nodes)
+        }
+    }
 }
